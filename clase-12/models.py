@@ -2,8 +2,10 @@ from decimal import Decimal
 from enum import Enum
 from typing import Optional
 
-from pydantic import BaseModel, EmailStr, PositiveInt
-from sqlmodel import Relationship, SQLModel, Field
+from pydantic import BaseModel, EmailStr, PositiveInt, model_validator
+from sqlmodel import Relationship, SQLModel, Field, select
+
+from db import Session, engine
 
 
 class StatusEnum(str, Enum):
@@ -44,6 +46,17 @@ class CustomerBase(SQLModel):
     email: EmailStr
     age: PositiveInt
 
+    @model_validator(mode="before")
+    @classmethod
+    def validate_email(cls, values):
+        email = values.get("email")
+        if email:
+            with Session(engine) as session:
+                query = select(Customer).where(Customer.email == email)
+                result = session.exec(query).first()
+                if result:
+                    raise ValueError(f"The email '{email}' already exists.")
+        return values
 
 class Customer(CustomerBase, table=True):
     id: Optional[int] = Field(default=None, primary_key=True)
