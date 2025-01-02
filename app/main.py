@@ -1,5 +1,7 @@
 import time
-from fastapi import FastAPI, Request
+from typing import Annotated
+from fastapi import Depends, FastAPI, HTTPException, Request, status
+from fastapi.security import HTTPBasic, HTTPBasicCredentials
 
 from db import create_all_tables
 from .routers import customers, transactions, plans
@@ -9,6 +11,8 @@ app = FastAPI(lifespan=create_all_tables)
 app.include_router(customers.router)
 app.include_router(transactions.router)
 app.include_router(plans.router)
+
+security = HTTPBasic()
 
 
 @app.middleware("http")
@@ -21,5 +25,7 @@ async def log_request_time(request: Request, call_next):
 
 
 @app.get("/")
-async def root():
-    return {"message": "hello world!"}
+async def root(credentials: Annotated[HTTPBasicCredentials, Depends(security)]):
+    if credentials.username == "juan" and credentials.password == "1234":
+        return {"message": f"Hola {credentials.username}!"}
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED)
