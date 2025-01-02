@@ -22,8 +22,8 @@ router = APIRouter()
     status_code=status.HTTP_201_CREATED,
     tags=["customers"],
 )
-async def create_customer(customer: CustomerCreate, session: SessionDep):
-    new_customer = Customer(**customer.model_dump())
+async def create_customer(customer_data: CustomerCreate, session: SessionDep):
+    new_customer = Customer.model_validate(customer_data.model_dump())
     session.add(new_customer)
     session.commit()
     session.refresh(new_customer)
